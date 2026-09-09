@@ -7,26 +7,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import gmean
 
-# Resolve absolute path relative to script location
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
-OUTPUT_PATH = os.path.join(SCRIPT_DIR, 'geometric.png')
-
-def find_file(filename):
-    if os.path.exists(filename):
-        return filename
-    path = os.path.join(SCRIPT_DIR, filename)
-    if os.path.exists(path):
-        return path
-    return filename
-
-file_jdk = find_file('PriorityQueue_wide_matrix.csv')
-file_custom = find_file('CustomPriorityQueue_wide_matrix.csv')
-
-# Validate files exist
-for path in (file_jdk, file_custom):
-    if not os.path.exists(path):
-        print(f"Error: Required CSV file '{path}' not found.")
-        sys.exit(1)
+file_jdk = 'PriorityQueue_wide_matrix.csv'
+file_custom = 'CustomPriorityQueue_wide_matrix.csv'
 
 df_jdk = pd.read_csv(file_jdk, sep=';')
 df_custom = pd.read_csv(file_custom, sep=';')
@@ -92,12 +74,11 @@ sorted_labels = [labels[idx] for idx in sorted_indices]
 sorted_colors = [colors[idx] for idx in sorted_indices]
 
 TEXT_COLOR = '#ffffff'
-BG_COLOR = '#1e1e1e'
 
 fig_height = max(7.0, len(sorted_labels) * 0.45)
 
-fig, ax = plt.subplots(figsize=(12, fig_height), facecolor=BG_COLOR)
-ax.set_facecolor(BG_COLOR)
+fig, ax = plt.subplots(figsize=(12, fig_height), facecolor='none')
+ax.set_facecolor('none')
 
 bars = ax.barh(
     range(len(sorted_labels)),
@@ -155,7 +136,7 @@ for spine in ax.spines.values():
     spine.set_linewidth(0.8)
 
 plt.tight_layout()
-plt.savefig(OUTPUT_PATH, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
+plt.savefig('transparent_test.png', dpi=300, bbox_inches='tight', transparent=True)
 plt.close()
 
-print(f"✓ Chart successfully saved to: {OUTPUT_PATH}")
+print("Saved transparent_test.png successfully")
