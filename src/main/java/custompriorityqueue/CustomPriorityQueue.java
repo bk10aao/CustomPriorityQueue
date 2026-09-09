@@ -319,14 +319,23 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
                 checkForConcurrentModification();
                 if (lastRet < 0)
                     throw new IllegalStateException();
-                E moved = removeAt(lastRet);
+                E lastElem = array.getLast();
+                removeAt(lastRet);
                 expectedModCount = modCount;
                 if (lastRet < cursor)
                     cursor--;
-                if (lastRet < array.size() && moved != array.get(lastRet)) {
-                    if (forgetMeNot == null)
-                        forgetMeNot = new ArrayList<>();
-                    forgetMeNot.add(moved);
+                if (lastRet < array.size() && array.get(lastRet) != lastElem) {
+                    boolean shiftedUp = true;
+                    for (int i = lastRet; i < array.size(); i++)
+                        if (array.get(i) == lastElem) {
+                            shiftedUp = false;
+                            break;
+                        }
+                    if (shiftedUp) {
+                        if (forgetMeNot == null)
+                            forgetMeNot = new ArrayList<>();
+                        forgetMeNot.add(lastElem);
+                    }
                 }
                 lastRet = -1;
             }
@@ -851,6 +860,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
         int lastIndex = array.size() - 1;
         if (index == lastIndex)
             return array.remove(lastIndex);
+        E removed = array.get(index);
         E moved = array.remove(lastIndex);
         array.set(index, moved);
         int oneBasedIndex = index + 1;
@@ -858,7 +868,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
         pushDown(array, oneBasedIndex);
         if (array.get(index) == currentAtPos)
             pushUp(array, oneBasedIndex);
-        return moved;
+        return removed;
     }
 
     /**

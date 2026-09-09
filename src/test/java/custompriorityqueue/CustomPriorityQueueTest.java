@@ -51,7 +51,7 @@ public class CustomPriorityQueueTest {
         }
 
         assertEquals(items.size(), queue.size());
-        assertEquals(1, queue.peek()); // Minimum element sits at root
+        assertEquals(1, queue.peek());
 
         List<Integer> extracted = new ArrayList<>();
         while (!queue.isEmpty()) {
