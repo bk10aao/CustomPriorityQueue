@@ -83,7 +83,7 @@ Below performance is a comparison made at 100,000 operations per method.
 | `Constructor(int, Comparator)`        |    4,607    |   4,443   | **Statistically Equivalent** | 1.04x  |
 | `Constructor(Collection)`             |  2,154,960  | 2,063,983 | **Statistically Equivalent** | 1.04x  |
 | `Constructor(Collection, Comparator)` |  1,874,421  | 1,889,059 | **Statistically Equivalent** | 1.01x  |
-| `add(E)`                              |     44      |    50     |          **Custom**          | 1.14x  |
+| `add(E)`                              |     44      |    50     | **Statistically Equivalent** | 1.14x  |
 | `addAll(Collection)`                  |  2,140,600  | 2,463,814 |          **Custom**          | 1.15x  |
 | `clear()`                             |      2      |     2     | **Statistically Equivalent** | 1.00x  |
 | `comparator()`                        |      1      |     1     | **Statistically Equivalent** | 1.00x  |
