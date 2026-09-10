@@ -13,49 +13,21 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 
+import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An array-backed priority queue implemented as a <b>min-max heap</b>.
+ * An array-backed priority queue implemented as a min-max heap.
  * <p>
- * A min-max heap is a complete binary tree in which levels alternate between
- * "min levels" and "max levels": the root (level 0) is a min level, so the
- * smallest element (according to the configured {@link Comparator}, or the
- * elements' {@link Comparable natural ordering} if none is supplied) always
- * sits at the root and is returned by {@link #peek()} / {@link #poll()}.
- * Every node on a min level is less than or equal to all of its descendants,
- * and every node on a max level is greater than or equal to all of its
- * descendants. This structure is what allows a conventional single-ended
- * {@link Queue} (ordered by minimum) to be built on top of it, while
- * internally retaining efficient access to both extremes of the ordering.
+ * Provides {@code O(1)} retrieval of the minimum element and {@code O(log n)}
+ * insertion and removal. Iterators are fail-fast and do not guarantee sorted order.
  * <p>
- * Internally, the heap is stored in a zero-based {@link ArrayList}
- * ({@link #array}), but the heap navigation logic ({@link #getParentIndex},
- * {@link #getLeftChildIndex}, {@link #getRightChildIndex}, etc.) is written
- * in terms of conventional <b>one-based</b> heap indices, where the root is
- * at index 1, and a node at index {@code i} has children at {@code 2i} and
- * {@code 2i + 1}. Callers of the private heap-maintenance methods therefore
- * pass one-based positions, while {@link #array} itself is always accessed
- * with zero-based offsets.
- * <p>
- * This implementation supports the standard {@link Queue} contract:
- * {@link #offer(Object)} inserts an element, {@link #peek()} and
- * {@link #poll()} retrieve/remove the minimum element without and with
- * removal respectively, and {@link #element()} and {@link #remove()} do the
- * same but throw {@link NoSuchElementException} on an empty queue rather than
- * returning {@code null}.
- * <p>
- * The {@link #iterator()} is <b>fail-fast</b>: structural modifications made
- * outside the iterator's own {@link Iterator#remove()} method will cause a
- * subsequent operation on the iterator to throw
- * {@link ConcurrentModificationException}. Note that, as with
- * {@link java.util.PriorityQueue}, the iterator does not guarantee any
- * particular traversal order (such as sorted or heap level order).
- * <p>
- * This class is <b>not thread-safe</b>. External synchronization is required
- * if instances are accessed concurrently from multiple threads.
- *
+ * <strong>Note: This implementation is not thread-safe.</strong>
  * @param <E> the type of elements held in this queue
+ *
+ * @see <a href="https://www.linkedin.com/in/benjamin-kane-81149482/">LinkedIn</a>
+ * @see <a href="https://github.com/bk10aao">GitHub account bk10aao</a>
+ * @see <a href="https://github.com/bk10aao/CustomPriorityQueue">Repository</a>
  */
 public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
 
@@ -63,63 +35,50 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * The zero-based backing array storing the min-max heap.
+     * The backing array storing the min-max heap.
      */
     private List<E> array;
 
     /**
-     * The comparator used to order elements in this queue, or {@code null} if
-     * elements are ordered according to their {@linkplain Comparable natural
-     * ordering}.
+     * The comparator used to order elements, or {@code null} for natural ordering.
      */
     private final Comparator<? super E> comparator;
 
     /**
-     * The number of structural modifications made to this queue, used by the
-     * fail-fast {@link #iterator()} to detect concurrent modification.
-     * Marked {@code transient} since it is a purely in-memory bookkeeping
-     * value that need not be part of the serialized state.
+     * Count of structural modifications for iterator fail-fast checks.
      */
     private transient int modCount = 0;
 
     /**
-     * Constructs an empty priority queue with a default initial capacity of
-     * 11, ordering elements according to their {@linkplain Comparable natural
-     * ordering}.
+     * Constructs an empty priority queue with default capacity (11) and natural ordering.
      */
     public CustomPriorityQueue() {
         this(11, null);
     }
 
     /**
-     * Constructs an empty priority queue with the given initial capacity,
-     * ordering elements according to their {@linkplain Comparable natural
-     * ordering}.
+     * Constructs an empty priority queue with the given initial capacity and natural ordering.
      *
-     * @param initialCapacity the initial capacity of the backing array
+     * @param initialCapacity initial capacity of the backing array
      */
     public CustomPriorityQueue(final int initialCapacity) {
         this(initialCapacity, null);
     }
 
     /**
-     * Constructs an empty priority queue with a default initial capacity of
-     * 11, ordering elements according to the given comparator.
+     * Constructs an empty priority queue with default capacity (11) and the given comparator.
      *
-     * @param comparator the comparator to order elements by, or {@code null}
-     *                    to use the elements' natural ordering
+     * @param comparator comparator to order elements, or {@code null} for natural ordering
      */
     public CustomPriorityQueue(final Comparator<? super E> comparator) {
         this(11, comparator);
     }
 
     /**
-     * Constructs an empty priority queue with the given initial capacity,
-     * ordering elements according to the given comparator.
+     * Constructs an empty priority queue with the given capacity and comparator.
      *
-     * @param initialCapacity the initial capacity of the backing array
-     * @param comparator      the comparator to order elements by, or
-     *                        {@code null} to use the elements' natural ordering
+     * @param initialCapacity initial capacity of the backing array
+     * @param comparator      comparator to order elements, or {@code null} for natural ordering
      */
     public CustomPriorityQueue(final int initialCapacity, Comparator<? super E> comparator) {
         this.array = new ArrayList<>(initialCapacity);
@@ -127,12 +86,10 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Constructs a priority queue containing the elements of the given
-     * collection, ordering elements according to their {@linkplain Comparable
-     * natural ordering}. The elements are heapified in linear time via
-     * {@link #buildHeap()} rather than inserted one at a time.
+     * Constructs a priority queue containing the elements of the given collection in natural order.
+     * Heap construction runs in {@code O(n)} time via {@link #buildHeap()}.
      *
-     * @param c the collection whose elements are to be placed into this queue
+     * @param c collection whose elements are to be placed in this queue
      */
     public CustomPriorityQueue(final Collection<? extends E> c) {
         this.array = new ArrayList<>(c);
@@ -141,14 +98,11 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Constructs a priority queue containing the elements of the given
-     * collection, ordering elements according to the given comparator. The
-     * elements are heapified in linear time via {@link #buildHeap()} rather
-     * than inserted one at a time.
+     * Constructs a priority queue containing the elements of the given collection and comparator.
+     * Heap construction runs in {@code O(n)} time via {@link #buildHeap()}.
      *
-     * @param c          the collection whose elements are to be placed into this queue
-     * @param comparator the comparator to order elements by, or {@code null}
-     *                   to use the elements' natural ordering
+     * @param c          collection whose elements are to be placed in this queue
+     * @param comparator comparator to order elements, or {@code null} for natural ordering
      */
     public CustomPriorityQueue(final Collection<? extends E> c, Comparator<? super E> comparator) {
         this.array = new ArrayList<>(c);
@@ -157,11 +111,9 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Inserts the given element into this queue.
+     * {@inheritDoc}
      *
-     * @param item the element to add
-     * @return {@code true} (as specified by {@link Collection#add})
-     * @throws NullPointerException if {@code item} is {@code null}
+     * @throws NullPointerException if specified element is {@code null}
      */
     public boolean add(final E item) {
         requireNonNull(item);
@@ -172,13 +124,10 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Inserts all elements of the given collection into this queue, in the
-     * collection's iteration order.
+     * {@inheritDoc}
      *
-     * @param c the collection whose elements are to be added
-     * @return {@code true} if this queue changed as a result of the call
-     * @throws NullPointerException     if {@code c}, or any element of {@code c}, is {@code null}
-     * @throws IllegalArgumentException if {@code c} is this queue itself
+     * @throws NullPointerException     if {@code c} or any element within it is {@code null}
+     * @throws IllegalArgumentException if {@code c} is this queue
      */
     public boolean addAll(final Collection<? extends E> c) {
         requireNonNull(c);
@@ -192,7 +141,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Removes all elements from this queue.
+     * {@inheritDoc}
      */
     public void clear() {
         modCount++;
@@ -200,22 +149,16 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Returns the comparator used to order the elements in this queue, or
-     * {@code null} if this queue uses the {@linkplain Comparable natural
-     * ordering} of its elements.
+     * Returns the comparator used to order elements, or {@code null} if using natural ordering.
      *
-     * @return the comparator used to order this queue, or {@code null}
+     * @return comparator or {@code null}
      */
     public Comparator<? super E> comparator() {
         return comparator;
     }
 
     /**
-     * Returns whether this queue contains the given element.
-     *
-     * @param o the object to test for membership
-     * @return {@code true} if this queue contains {@code o}; {@code false} if
-     *         {@code o} is {@code null} or not present
+     * {@inheritDoc}
      */
     public boolean contains(final Object o) {
         if (o == null)
@@ -224,13 +167,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Returns whether this queue contains every element of the given
-     * collection.
-     *
-     * @param c the collection to check for containment
-     * @return {@code true} if every element of {@code c} is present in this
-     *         queue (or {@code c} is empty); {@code false} otherwise
-     * @throws NullPointerException if {@code c} is {@code null}
+     * {@inheritDoc}
      */
     public boolean containsAll(final Collection<?> c) {
         requireNonNull(c);
@@ -245,10 +182,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Retrieves, but does not remove, the minimum element of this queue.
-     *
-     * @return the minimum element of this queue
-     * @throws NoSuchElementException if this queue is empty
+     * {@inheritDoc}
      */
     public E element() {
         E item = peek();
@@ -258,34 +192,17 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Returns whether this queue contains no elements.
-     *
-     * @return {@code true} if this queue is empty, {@code false} otherwise
+     * {@inheritDoc}
      */
     public boolean isEmpty() {
         return array.isEmpty();
     }
 
     /**
-     * Returns a fail-fast iterator over the elements of this queue.
+     * {@inheritDoc}
      * <p>
-     * The iterator does not return elements in any particular order (such as
-     * sorted or heap level order). If the queue is structurally modified at
-     * any time after the iterator is created, other than through the
-     * iterator's own {@link Iterator#remove()} method, the iterator will
-     * throw a {@link ConcurrentModificationException} on a subsequent call to
-     * {@link Iterator#next()} or {@link Iterator#remove()}.
-     * <p>
-     * Because removing an arbitrary (non-root) element from the heap may
-     * involve moving the last element into the vacated slot and then
-     * re-heapifying, a single {@link Iterator#remove()} call can relocate an
-     * element that the iterator has not yet visited into a position it has
-     * already passed. To ensure every original element is still eventually
-     * visited despite such relocations, any element displaced backward past
-     * the iterator's current cursor is queued internally and yielded before
-     * the iterator finishes.
-     *
-     * @return an iterator over the elements of this queue
+     * Elements are returned in arbitrary order. The iterator is fail-fast and tracks
+     * relocated elements to ensure complete traversal across concurrent removals.
      */
     @Override
     public Iterator<E> iterator() {
@@ -348,40 +265,28 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Inserts the given element into this queue. This is equivalent to
-     * {@link #add(Object)}, provided for {@link Queue} interface compatibility.
-     *
-     * @param item the element to add
-     * @return {@code true} (as specified by {@link Queue#offer})
-     * @throws NullPointerException if {@code item} is {@code null}
+     * {@inheritDoc}
      */
     public boolean offer(final E item) {
         return add(item);
     }
 
     /**
-     * Retrieves, but does not remove, the minimum element of this queue.
-     *
-     * @return the minimum element of this queue, or {@code null} if this queue is empty
+     * {@inheritDoc}
      */
     public E peek() {
         return array.isEmpty() ? null : array.getFirst();
     }
 
     /**
-     * Retrieves and removes the minimum element of this queue.
-     *
-     * @return the minimum element of this queue, or {@code null} if this queue is empty
+     * {@inheritDoc}
      */
     public E poll() {
         return array.isEmpty() ? null : removeAt(0);
     }
 
     /**
-     * Retrieves and removes the minimum element of this queue.
-     *
-     * @return the minimum element of this queue
-     * @throws NoSuchElementException if this queue is empty
+     * {@inheritDoc}
      */
     public E remove() {
         E item = poll();
@@ -391,11 +296,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Removes a single instance of the given element from this queue, if
-     * present, restoring the min-max heap property afterward.
-     *
-     * @param o the object to remove
-     * @return {@code true} if an element was removed as a result of this call
+     * {@inheritDoc}
      */
     public boolean remove(final Object o) {
         if (o == null || array.isEmpty())
@@ -408,13 +309,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Removes every element of this queue that is also contained in the given
-     * collection. The heap is rebuilt from scratch via {@link #buildHeap()}
-     * after filtering.
-     *
-     * @param c the collection of elements to remove
-     * @return {@code true} if this queue changed as a result of the call
-     * @throws NullPointerException if {@code c} is {@code null}
+     * {@inheritDoc}
      */
     public boolean removeAll(final Collection<?> c) {
         requireNonNull(c);
@@ -432,13 +327,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Retains only the elements of this queue that are also contained in the
-     * given collection, removing all others. The heap is rebuilt from scratch
-     * via {@link #buildHeap()} after filtering.
-     *
-     * @param c the collection of elements to retain
-     * @return {@code true} if this queue changed as a result of the call
-     * @throws NullPointerException if {@code c} is {@code null}
+     * {@inheritDoc}
      */
     public boolean retainAll(final Collection<?> c) {
         requireNonNull(c);
@@ -456,33 +345,21 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
     }
 
     /**
-     * Returns the number of elements currently held in this queue.
-     *
-     * @return the current element count
+     * {@inheritDoc}
      */
     public int size() {
         return array.size();
     }
 
     /**
-     * Returns an array containing all elements of this queue, in no
-     * particular order.
-     *
-     * @return an array containing all elements of this queue
+     * {@inheritDoc}
      */
     public Object[] toArray() {
         return array.toArray();
     }
 
     /**
-     * Returns an array containing all elements of this queue, in no
-     * particular order, using the runtime type of the given array.
-     *
-     * @param a   the array into which the elements are stored, if it is
-     *            large enough; otherwise a new array of the same runtime
-     *            type is allocated for this purpose
-     * @param <T> the runtime type of the array to contain the queue's elements
-     * @return an array containing all elements of this queue
+     * {@inheritDoc}
      */
     public <T> T[] toArray(final T[] a) {
         return array.toArray(a);
@@ -548,7 +425,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
         if (g4 <= size)
             temp[count++] = g4;
         int[] result = new int[count];
-        System.arraycopy(temp, 0, result, 0, count);
+        arraycopy(temp, 0, result, 0, count);
         return result;
     }
 
@@ -659,8 +536,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
      *         it lies on a max level
      */
     private boolean isEven(final int i) {
-        int level = 31 - Integer.numberOfLeadingZeros(i);
-        return level % 2 == 0;
+        return (31 - Integer.numberOfLeadingZeros(i)) % 2 == 0;
     }
 
     /**
@@ -716,9 +592,8 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
                     if (compare(h.get(m - 1), h.get(parentOfM - 1)) < 0)
                         swap(m - 1, parentOfM - 1, h);
                     i = m;
-                } else {
+                } else
                     break;
-                }
             else {
                 if (compare(h.get(m - 1), h.get(i - 1)) > 0)
                     swap(i - 1, m - 1, h);
@@ -751,9 +626,8 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
                     if (compare(h.get(m - 1), h.get(parentOfM - 1)) > 0)
                         swap(m - 1, parentOfM - 1, h);
                     i = m;
-                } else {
+                } else
                     break;
-                }
             else {
                 if (compare(h.get(m - 1), h.get(i - 1)) < 0)
                     swap(i - 1, m - 1, h);
