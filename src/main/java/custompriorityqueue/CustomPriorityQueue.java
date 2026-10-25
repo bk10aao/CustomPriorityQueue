@@ -13,6 +13,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 
+import static java.lang.Integer.numberOfLeadingZeros;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
@@ -210,6 +211,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
             private int cursor = 0;
             private int lastRet = -1;
             private int expectedModCount = modCount;
+
             private List<E> forgetMeNot = null;
 
             @Override
@@ -536,7 +538,7 @@ public class CustomPriorityQueue<E> implements Queue<E>, Serializable {
      *         it lies on a max level
      */
     private boolean isEven(final int i) {
-        return (31 - Integer.numberOfLeadingZeros(i)) % 2 == 0;
+        return (31 - numberOfLeadingZeros(i)) % 2 == 0;
     }
 
     /**
